@@ -32,13 +32,9 @@ touch /etc/config/passwall_show >/dev/null 2>&1
 
 chmod +x /etc/init.d/passwall
 chmod +x /etc/init.d/passwall_server
-chmod 644 /usr/lib/lua/luci/controller/passwall.lua
-chmod -R 644 /usr/lib/lua/luci/model/cbi/passwall
-chmod -R 644 /usr/lib/lua/luci/view/passwall
+chmod +x /etc/hotplug.d/iface/98-passwall
 chmod +x /usr/share/passwall/*.sh 
-chmod +x /usr/share/passwall/bin/*
-chmod +x /usr/bin/passwall*
-chmod 600 /etc/config/passwall
+
 
 use_nft=$(uci -q get passwall.@global_forwarding[0].use_nft || echo "0")
 [ "${use_nft}" = "0" ] && {
