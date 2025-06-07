@@ -1,63 +1,28 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=xray-core
-PKG_VERSION:=1.8.3
+PKG_VERSION:=1.8.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
-PKG_SOURCE_URL:=https://codeload.github.com/XTLS/Xray-core/tar.gz/v$(PKG_VERSION)?
-PKG_HASH:=bdfa65c15cd25f931745d9c70c753503db5d119ff11960ca7b3a2e19c4b0a8d1
+PKG_SOURCE:=Xray-core-v1.8.1.zip
+PKG_SOURCE_URL:=https://raw.githubusercontent.com/dotywrt/core/main
+PKG_HASH:=1892aa75130a684934196cd6b2764f905573f5ad016251c0bf8657390d2c2062
 
-PKG_MAINTAINER:=Tianling Shen <cnsztl@immortalwrt.org>
-PKG_LICENSE:=MPL-2.0
-PKG_LICENSE_FILES:=LICENSE
-
-PKG_BUILD_DIR:=$(BUILD_DIR)/Xray-core-$(PKG_VERSION)
-PKG_BUILD_DEPENDS:=golang/host
-PKG_BUILD_PARALLEL:=1
-PKG_USE_MIPS16:=0
-
-GO_PKG:=github.com/xtls/xray-core
-GO_PKG_BUILD_PKG:=github.com/xtls/xray-core/main
-GO_PKG_LDFLAGS_X:= \
-	$(GO_PKG)/core.build=OpenWrt \
-	$(GO_PKG)/core.version=$(PKG_VERSION)
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
-
-define Package/xray/template
-  TITLE:=A platform for building proxies to bypass network restrictions
-  SECTION:=net
-  CATEGORY:=Network
-  URL:=https://xtls.github.io
-endef
 
 define Package/xray-core
-  $(call Package/xray/template)
-  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle
-endef
-
-define Package/xray-example
-  $(call Package/xray/template)
-  TITLE+= (example configs)
-  DEPENDS:=xray-core
-  PKGARCH:=all
-endef
-
-define Package/xray/description
-  Xray, Penetrates Everything. It helps you to build your own computer network.
-  It secures your network connections and thus protects your privacy.
+  SECTION:=net
+  CATEGORY:=Network
+  TITLE:=Custom Xray binary as /usr/bin/xray
+  MAINTAINER:=DOTYWRT <admin@dotycat.com>
+  DEPENDS:=+ca-bundle
 endef
 
 define Package/xray-core/description
-  $(call Package/xray/description)
-endef
-
-define Package/xray-example/description
-  $(call Package/xray/description)
-
-  This includes example configuration files for xray-core.
+Installs a custom prebuilt Xray binary to /usr/bin/xray.
+Uses its own config path and init script.
 endef
 
 define Package/xray-core/conffiles
@@ -65,17 +30,40 @@ define Package/xray-core/conffiles
 /etc/config/xray
 endef
 
+define Package/xray-example
+  SECTION:=net
+  CATEGORY:=Network
+  TITLE:=Example Xray config files
+  MAINTAINER:=DOTYWRT <admin@dotycat.com>
+  DEPENDS:=xray-core
+endef
+
+define Package/xray-example/description
+Installs example configuration files for Xray.
+endef
+
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	unzip -o $(DL_DIR)/$(PKG_SOURCE) -d $(PKG_BUILD_DIR)
+	chmod +x $(PKG_BUILD_DIR)/xray
+	mv $(PKG_BUILD_DIR)/xray $(PKG_BUILD_DIR)/xray25.3.31
+endef
+
+define Build/Compile
+	# No compile step
+endef
+
 define Package/xray-core/install
-	$(call GoPackage/Package/Install/Bin,$(PKG_INSTALL_DIR))
-	$(INSTALL_DIR) $(1)/usr/bin/
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/bin/main $(1)/usr/bin/xray
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/xray25.3.31 $(1)/usr/bin/xray
 
-	$(INSTALL_DIR) $(1)/etc/xray/
-	$(INSTALL_DATA) $(CURDIR)/files/config.json.example $(1)/etc/xray/
+	$(INSTALL_DIR) $(1)/etc/xray
+	$(INSTALL_DATA) $(CURDIR)/files/config.json.example $(1)/etc/xray/config.json
 
-	$(INSTALL_DIR) $(1)/etc/config/
+	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) $(CURDIR)/files/xray.conf $(1)/etc/config/xray
-	$(INSTALL_DIR) $(1)/etc/init.d/
+
+	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) $(CURDIR)/files/xray.init $(1)/etc/init.d/xray
 endef
 
